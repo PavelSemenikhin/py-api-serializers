@@ -22,9 +22,14 @@ class ActorSerializer(serializers.ModelSerializer):
 
 
 class CinemaHallSerializer(serializers.ModelSerializer):
+    capacity = serializers.SerializerMethodField()
+
     class Meta:
         model = CinemaHall
-        fields = ("id", "name", "rows", "seats_in_row", "capacity",)
+        fields = ("id", "name", "rows", "seats_in_row", "capacity")
+
+    def get_capacity(self, obj: CinemaHall) -> int:
+        return obj.rows * obj.seats_in_row
 
 
 class MovieSerializer(serializers.ModelSerializer):
@@ -62,7 +67,7 @@ class MovieListSerializer(serializers.ModelSerializer):
             "genres",
         )
 
-    def get_actors(self, obj: Movie) -> list:
+    def get_actors(self, obj: Movie) -> list[str]:
         return [
             f"{actor.first_name} {actor.last_name}"
             for actor in obj.actors.all()
@@ -101,15 +106,15 @@ class MovieSessionSerializer(serializers.ModelSerializer):
 
 
 class MovieSessionListSerializer(serializers.ModelSerializer):
-    movie_title = serializers.CharField(source="movie.title", read_only=True)
+    movie_title = serializers.CharField(
+        source="movie.title",
+        read_only=True,
+    )
     cinema_hall_name = serializers.CharField(
         source="cinema_hall.name",
-        read_only=True
+        read_only=True,
     )
-    cinema_hall_capacity = serializers.IntegerField(
-        source="cinema_hall.capacity",
-        read_only=True
-    )
+    cinema_hall_capacity = serializers.SerializerMethodField()
 
     class Meta:
         model = MovieSession
@@ -120,6 +125,9 @@ class MovieSessionListSerializer(serializers.ModelSerializer):
             "cinema_hall_name",
             "cinema_hall_capacity",
         )
+
+    def get_cinema_hall_capacity(self, obj: MovieSession) -> int:
+        return obj.cinema_hall.rows * obj.cinema_hall.seats_in_row
 
 
 class MovieSessionCreateSerializer(serializers.ModelSerializer):
